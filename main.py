@@ -2,10 +2,31 @@ from common import *
 
 
 def addProduct():
+    product_information = {}
     url = input("Enter product url: ")
-    headers= {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, "html.parser")
-    pretty = BeautifulSoup(soup.prettify(), "html.parser")
-    print(pretty)
+    price = fetchProductDetails(url)
+
+    exists = checkProductAlreadyExists(url)
+    if exists:
+        print("This product is already in the list")
+        return
+
+    # Adding product to the CSV file
+    file = open('products.csv','a+', newline='')
+    writer = csv.writer(file)
+    writer.writerow([url, price.strip(),datetime.now().strftime("%d/%m/%Y %H:%M:%S")])
+    file.close()
+
+def checkProductAlreadyExists(product_url):
+    file = open('products.csv', 'r+', newline='')
+    for product in file.readlines():
+        url = product.split(",")[0]
+        if url == product_url:
+            file.close()
+            return True
+    file.close()
+    return False
+
+
 addProduct()
+
