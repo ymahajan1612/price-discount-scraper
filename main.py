@@ -19,7 +19,8 @@ def addProduct():
     # Adding product to the CSV file
     file = open('products.csv','a+',newline='')
     writer = csv.writer(file)
-    writer.writerow([url, price ,str(datetime.now()).split(".")[0]])
+    now =str(pd.to_datetime('now').to_pydatetime()).split(".")[0]
+    writer.writerow([url,price,now])
     file.close()
 
 def checkProductAlreadyExists(product_url):

@@ -1,6 +1,11 @@
 from common import *
 
 
+from email.message import EmailMessage
+import ssl
+import smtplib
+
+
 
 def checkPriceChange():
     """
@@ -18,6 +23,7 @@ def checkPriceChange():
         4: Product price has not changed
     """
     product_prices = {}
+    product_links = {}
     products = pd.read_csv("products.csv")
     products.drop(products.filter(regex="Unname"),axis=1, inplace=True)
     for line, product in products.iterrows():
@@ -25,6 +31,7 @@ def checkPriceChange():
         price = float(product['Price'])
         last_updated = product['Last_updated']
         time_difference = (datetime.now() - datetime.strptime(last_updated.strip(),"%Y-%m-%d %H:%M:%S")).days
+        print(time_difference)
         if time_difference >= 1:
                 response = getResponse(url)
                 product_name = getProductName(response)
@@ -32,25 +39,61 @@ def checkPriceChange():
                 if not still_available: # Scenario 1
                     product_prices[product_name] = (None,None)
                     product['Price'] = 0
-                    product['Last_updated'] = datetime.now()
+
                 else:
                     new_price = getProductPrice(response)
                     if price == 0.0: # Scenario 2
                         product_prices[product_name] = (new_price, None)
+                        product_links[product_name] = url
                         product['Price'] = new_price
-                        product['Last_updated'] = datetime.now()
+
 
                     price_change = new_price - price
                     if price_change < 0: # Scenario 3 and 4
+                        product_links[product_name] = url
                         change = ((new_price - price)/price) * 100
                         product_prices[product_name] = {new_price, change}
                         product['Price'] = new_price
-                        product['Last_updated'] = datetime.now()
+                product['Last_updated'] = str(pd.to_datetime('now').to_pydatetime()).split(".")[0]
                 products.loc[line] = product
     products.to_csv('products.csv',mode='w',index=False)
+    return product_prices, product_links
 
-    return product_prices
+def emailUser(price_changes,product_links):
+    sender = #enter email here
+    email_password = # set up an app password and enter that here
+    recipient = #enter email here
 
+    subject = "An update on your Amazon products"
 
+    body = ""
 
-print(checkPriceChange())
+    for product, price_information in price_changes.items():
+        new_price, percentage_change = price_information
+
+        if new_price == None and percentage_change == None:
+            body += "{} is now out of stock! \n".format(product)
+        elif new_price and percentage_change == None:
+            body += "{} is now back in stock! You can find it here: {} \n".format(product, product_links[product])
+        else:
+            body += "{} is on discount at £{} with {}% reduction! You can find it here {}\n".format(product,new_price,abs(round(percentage_change,2)), product_links[product])
+
+    em = EmailMessage()
+    em['From'] = sender
+    em['To'] = recipient
+    em['Subject'] = subject
+
+    em.set_content(body)
+
+    context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
+        smtp.login(sender, email_password)
+        smtp.sendmail(sender, recipient, em.as_string())
+
+path = './products.csv'
+file_exists = os.path.exists(path)
+if file_exists:
+    price_changes, product_links = checkPriceChange()
+    if price_changes != {}:
+        emailUser(price_changes, product_links)
