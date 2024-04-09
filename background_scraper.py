@@ -9,7 +9,7 @@ import smtplib
 
 def checkPriceChange():
     """
-    first loop through each product in the csv
+    first loop through each product in the csv by reading it into a pandas datafram
     compare current time and last_updated value
     if the difference is >= 24 hrs then pull data for that product
     check if the product is still in stock then add to a dict {product_name: (null, null)}
@@ -72,11 +72,11 @@ def emailUser(price_changes,product_links):
         new_price, percentage_change = price_information
 
         if new_price == None and percentage_change == None:
-            body += "{} is now out of stock! \n".format(product)
+            body += "{} is now out of stock! \n\n".format(product)
         elif new_price and percentage_change == None:
-            body += "{} is now back in stock! You can find it here: {} \n".format(product, product_links[product])
+            body += "{} is now back in stock! You can find it here: {} \n\n".format(product, product_links[product])
         else:
-            body += "{} is on discount at £{} with {}% reduction! You can find it here {}\n".format(product,new_price,abs(round(percentage_change,2)), product_links[product])
+            body += "{} is on discount at £{} with {}% reduction! You can find it here {}\n\n".format(product,new_price,abs(round(percentage_change,2)), product_links[product])
 
     em = EmailMessage()
     em['From'] = sender
